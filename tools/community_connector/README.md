@@ -307,6 +307,67 @@ in order.
 | `--source-dir` | | Override the connector source directory (default: locate `sources/<source_name>/`). |
 | `--keep-wheel` | | After upload, copy any wheels built in this run into this local directory. User-supplied wheels are not copied. |
 
+### `publish`
+
+Publish a connector to your workspace as a `.connector.json` asset. The file is
+written to `/Users/<you>/.community-connectors/<display_name>.connector.json`;
+the workspace server infers the `CommunityConnector` asset type from the
+`.connector.json` extension, and the saved connector then appears as a **Custom**
+tile in the "Add Data" page (under Community connectors).
+
+The manifest's `connectionSpec` is read from the connector's
+`connector_spec.yaml` (resolved the same way as `create_connection --spec`: local
+source dir, a `--spec` file, a repo URL, or the default repo). By default the
+framework + connector wheels are built from the local source and uploaded to a UC
+Volume, and their paths are recorded in the manifest's `dependencies`. Pass
+`--package` / `--volume-path` to reuse pre-built wheels instead of building.
+
+```bash
+# Build wheels from source and publish (display name from the spec / source name)
+community-connector publish github
+
+# Custom display name + a pre-built connector wheel (skips building)
+community-connector publish github -d "My GitHub" -p ./dist/connector.whl
+
+# Replace an already-published connector at the same path
+community-connector publish github -d "My GitHub" --overwrite
+```
+
+**Options:**
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--display-name` | `-d` | User-facing name (backs the filename and the Add Data tile). Defaults to the spec's `display_name`, then the source name. |
+| `--spec` | `-s` | Local path to `connector_spec.yaml`, or a GitHub repo URL. |
+| `--package` | `-p` | Pre-built connector wheel; skip building. Repeatable. |
+| `--volume-path` | `-v` | UC Volume directory for the wheels. Defaults to `/Volumes/<catalog>/<schema>/community_connector/packages`. |
+| `--catalog` | `-c` | UC catalog for the wheel volume. |
+| `--schema` | `-t` | Schema for the wheel volume. |
+| `--overwrite` | | Overwrite an existing connector saved at the same path. |
+
+### `unpublish`
+
+Remove a previously published connector from your workspace — the inverse of
+`publish`. Deletes the `.connector.json` file at
+`/Users/<you>/.community-connectors/<display_name>.connector.json`, so the
+connector no longer appears as a **Custom** tile in Add Data. The display name is
+resolved the same way as `publish`; the command errors if no matching connector
+is found, and prompts for confirmation unless `--yes` is passed.
+
+```bash
+# Resolve the display name from the spec / source name, confirm, then delete
+community-connector unpublish github
+
+# Explicit display name, no prompt (works without repo access)
+community-connector unpublish github -d "My GitHub" --yes
+```
+
+**Options:**
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--display-name` | `-d` | User-facing name of the connector to remove. Defaults to the spec's `display_name`, then the source name — must match what was used at publish time. |
+| `--spec` | `-s` | Local path to `connector_spec.yaml`, or a GitHub repo URL. Only used to resolve the display name when `--display-name` is not given. |
+| `--yes` | `-y` | Skip the confirmation prompt. |
+
 ## Pipeline Spec Format
 
 The pipeline spec defines which tables to ingest and how:
